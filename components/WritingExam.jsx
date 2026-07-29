@@ -10,6 +10,7 @@ import EvaluationModal from "@/components/EvaluationModal";
 import { BUILD_IELTS_EVALUATION_PROMPT } from "@/constant/ielts";
 import { getProvider } from "@/constant/providers";
 import { callAI, usePuterAI } from "@/lib/client/ai";
+import { saveScoreEntry } from "@/lib/client/scoreHistory";
 
 export default function WritingExam({ providerId }) {
   const provider = getProvider(providerId);
@@ -80,6 +81,18 @@ export default function WritingExam({ providerId }) {
         input: fullPrompt,
       });
       setEvalResult(result);
+
+      saveScoreEntry({
+        type: "writing",
+        provider: providerId,
+        providerName: provider.name,
+        label:
+          activePart === "part1"
+            ? `Task 1 (${currentQuestion.type})`
+            : `Task 2 (${currentQuestion.type})`,
+        report: result,
+        prompt: currentQuestion.prompt.slice(0, 200),
+      });
     } catch (err) {
       setEvalResult(`Error during evaluation: ${err.message}`);
     } finally {

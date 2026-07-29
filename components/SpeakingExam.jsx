@@ -19,6 +19,7 @@ import {
 } from "@/constant/speaking";
 import { getProvider } from "@/constant/providers";
 import { callAI, usePuterAI } from "@/lib/client/ai";
+import { saveScoreEntry } from "@/lib/client/scoreHistory";
 
 const SPEAKING_LOADING_STEPS = [
   "Analyzing fluency & coherence...",
@@ -336,6 +337,14 @@ export default function SpeakingExam({ providerId }) {
     setEvaluationResult(evalResult);
     setIsEvaluating(false);
     setTestPhase("FINISHED");
+
+    saveScoreEntry({
+      type: "speaking",
+      provider: providerId,
+      providerName: provider.name,
+      label: "Speaking Mock Test",
+      report: evalResult,
+    });
   };
 
   const handlePart3Turn = async () => {
