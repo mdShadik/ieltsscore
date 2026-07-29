@@ -5,6 +5,7 @@ import QuestionPanel from '../../../components/QuestionPanel';
 import AnswerPanel from '../../../components/AnswerPanel';
 import NavigationFooter from '../../../components/NavigationFooter';
 import EvaluationModal from '../../../components/EvaluationModal';
+import { BUILD_IELTS_EVALUATION_PROMPT } from '../../../constant/ielts';
 
 export default function ExamPage() {
   const [puter, setPuter] = useState(null);
@@ -63,22 +64,16 @@ export default function ExamPage() {
     setLoading(true);
     setEvalResult('');
 
-    const systemPrompt = `You are a certified, strict IELTS General Training Writing Examiner.
-Evaluate the candidate's writing based strictly on the official IELTS band descriptors:
-1. OVERALL BAND SCORE (rounded to nearest 0.5)
-2. SUB-SCORES:
-   - Task Achievement / Response (0.0-9.0)
-   - Coherence & Cohesion (0.0-9.0)
-   - Lexical Resource (0.0-9.0)
-   - Grammatical Range & Accuracy (0.0-9.0)
-3. SPECIFIC IMPROVEMENTS & CORRECTIONS
-4. BAND 8.0+ REWRITTEN MODEL ANSWER`;
-
-    const fullPrompt = `${systemPrompt}\n\nEVALUATION TASK: ${activePart === 'part1' ? 'Task 1 Letter' : 'Task 2 Essay'}\nTYPE: ${currentQuestion.type}\nPROMPT:\n${currentQuestion.prompt}\n\nCANDIDATE SUBMISSION:\n${currentAnswer}`;
+    // Generate prompt using the new prompt constant builder
+    const fullPrompt = BUILD_IELTS_EVALUATION_PROMPT({
+      taskType: activePart === 'part1' ? `Task 1 (${currentQuestion.type})` : `Task 2 (${currentQuestion.type})`,
+      promptText: currentQuestion.prompt,
+      candidateAnswer: currentAnswer
+    });
 
     try {
       if (!puter) throw new Error("AI engine loading...");
-      const res = await puter.ai.chat(fullPrompt, { model: 'gpt-4o' });
+      const res = await puter.ai.chat(fullPrompt, { model: 'gemini-3.1-pro-preview' });
       setEvalResult(res.toString());
     } catch (err) {
       setEvalResult(`Error during evaluation: ${err.message}`);
