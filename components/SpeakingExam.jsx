@@ -729,8 +729,13 @@ export default function SpeakingExam({ providerId }) {
               {showResponseUI && inputMode === "text" && (
                 <div className="shrink-0 md:shrink md:flex md:flex-col md:justify-end pb-[max(1rem,env(safe-area-inset-bottom))]">
                   <TextResponsePanel
-                    transcript={`${transcript}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim() || transcript}
+                    transcript={
+                      isListening && interimTranscript
+                        ? `${transcript}${transcript ? " " : ""}${interimTranscript}`
+                        : transcript
+                    }
                     onTranscriptChange={(val) => {
+                      if (isListening) stopListening();
                       setTranscript(val);
                       setInterimTranscript("");
                       transcriptRef.current = val;
