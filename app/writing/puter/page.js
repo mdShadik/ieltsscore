@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import Header from '../../../components/Header';
 import QuestionPanel from '../../../components/QuestionPanel';
 import AnswerPanel from '../../../components/AnswerPanel';
 import NavigationFooter from '../../../components/NavigationFooter';
@@ -10,6 +12,7 @@ import { BUILD_IELTS_EVALUATION_PROMPT } from '../../../constant/ielts';
 export default function ExamPage() {
   const [puter, setPuter] = useState(null);
   const [activePart, setActivePart] = useState('part1');
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Exam Data State
   const [questions, setQuestions] = useState({
@@ -84,6 +87,32 @@ export default function ExamPage() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#121212] select-none">
+      {!isFocusMode && (
+        <>
+          <Header />
+          <div className="px-4 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsFocusMode(true)}
+              className="flex items-center gap-2 rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-xs font-semibold text-gray-300 transition hover:bg-[#252525] hover:text-white"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Focus Mode
+            </button>
+          </div>
+        </>
+      )}
+
+      {isFocusMode && (
+        <button
+          type="button"
+          onClick={() => setIsFocusMode(false)}
+          className="absolute left-4 top-4 z-50 flex items-center gap-2 rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-xs font-semibold text-gray-300 shadow-lg transition hover:bg-[#252525] hover:text-white"
+        >
+          <Minimize2 className="h-3.5 w-3.5" />
+          Exit Focus Mode
+        </button>
+      )}
       
       {/* Split Exam Screen Area */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">

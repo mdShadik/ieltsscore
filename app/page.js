@@ -1,15 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Header from '@/components/Header';
 import { 
   Sparkles, 
-  LogIn, 
   Bot, 
   Cpu, 
   Zap, 
   CheckCircle, 
-  ArrowRight,
-  GraduationCap
+  ArrowRight
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -27,7 +26,7 @@ export default function LandingPage() {
     {
       id: 'gemini',
       name: 'Google Gemini',
-      description: 'Evaluate essays using Google’s high-speed Gemini 2.5 Flash model.',
+      description: 'Evaluate essays using Google’s high-speed Gemini model.',
       active: false,
       href: '#',
       tag: 'Coming Soon',
@@ -57,31 +56,12 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#101010] text-gray-100 flex flex-col font-sans">
+    <div className="w-full min-h-screen bg-[#101010] text-gray-100 flex flex-col font-sans">
       
-      {/* Navigation Header */}
-      <nav className="border-b border-[#222] bg-[#141414] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-lg text-indigo-400">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <span className="font-extrabold text-lg tracking-tight text-white">
-            IELTS<span className="text-indigo-400">Score</span>.ai
-          </span>
-        </div>
+      <Header />
 
-        {/* Static Login Button */}
-        <button
-          onClick={() => alert("Login feature is static for now.")}
-          className="flex items-center gap-2 bg-[#222] hover:bg-[#2e2e2e] border border-[#333] text-gray-200 text-sm font-semibold px-4 py-2 rounded-lg transition"
-        >
-          <LogIn className="w-4 h-4 text-gray-400" />
-          <span>Login / Sign Up</span>
-        </button>
-      </nav>
-
-      {/* Hero Section */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 md:py-20 space-y-16">
+      {/* Hero & Main Content */}
+      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 md:py-16 space-y-16">
         
         <div className="text-center space-y-5 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">
@@ -177,7 +157,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#222] bg-[#141414] py-6 text-center text-xs text-gray-500">
+      <footer className="border-t border-[#222] bg-[#141414] py-6 text-center text-xs text-gray-500 mt-auto">
         IELTS General Training Writing Evaluator &bull; Powered by Puter.js
       </footer>
 
