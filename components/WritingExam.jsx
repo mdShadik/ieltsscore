@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import Header from "@/components/Header";
 import QuestionPanel from "@/components/QuestionPanel";
@@ -9,8 +9,10 @@ import NavigationFooter from "@/components/NavigationFooter";
 import EvaluationModal from "@/components/EvaluationModal";
 import { BUILD_IELTS_EVALUATION_PROMPT } from "@/constant/ielts";
 import { getProvider } from "@/constant/providers";
+import { getModelLabel } from "@/constant/models";
 import { callAI, usePuterAI } from "@/lib/client/ai";
 import { saveScoreEntry } from "@/lib/client/scoreHistory";
+import { getModelForProvider } from "@/lib/client/modelPreferences";
 
 export default function WritingExam({ providerId }) {
   const provider = getProvider(providerId);
@@ -36,6 +38,15 @@ export default function WritingExam({ providerId }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [evalResult, setEvalResult] = useState("");
+  const [activeModel, setActiveModel] = useState(() => getModelForProvider(providerId));
+
+  useEffect(() => {
+    const syncModel = () => setActiveModel(getModelForProvider(providerId));
+    syncModel();
+    window.addEventListener("ieltsscore:model-preferences-changed", syncModel);
+    return () =>
+      window.removeEventListener("ieltsscore:model-preferences-changed", syncModel);
+  }, [providerId]);
 
   const handleUpdateQuestion = (part, data) => {
     setQuestions((prev) => ({ ...prev, [part]: data }));
@@ -116,6 +127,10 @@ export default function WritingExam({ providerId }) {
             </button>
             <span className="text-xs text-gray-500">
               AI Engine: <span className="text-indigo-400">{provider.name}</span>
+              {" · "}
+              <span className="text-gray-400">
+                {getModelLabel(providerId, activeModel)}
+              </span>
             </span>
           </div>
         </>

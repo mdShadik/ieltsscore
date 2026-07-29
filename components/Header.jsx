@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, LogIn, LogOut, History } from "lucide-react";
+import { GraduationCap, LogIn, LogOut, History, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -26,6 +26,13 @@ export default function Header() {
 
         {authenticated && (
           <div className="flex items-center gap-2">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 rounded-lg border border-[#333] bg-[#222] px-4 py-2 text-sm font-semibold text-gray-200 transition hover:bg-[#2e2e2e]"
+            >
+              <User className="h-4 w-4 text-gray-400" />
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
             <Link
               href="/history"
               className="flex items-center gap-2 rounded-lg border border-[#333] bg-[#222] px-4 py-2 text-sm font-semibold text-gray-200 transition hover:bg-[#2e2e2e]"

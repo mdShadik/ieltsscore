@@ -3,7 +3,7 @@ import { isValidProvider, getProvider } from "@/constant/providers";
 
 export async function POST(req) {
   try {
-    const { provider, prompt, messages } = await req.json();
+    const { provider, prompt, messages, model } = await req.json();
 
     if (!provider || !isValidProvider(provider)) {
       return Response.json({ error: "Invalid or missing provider." }, { status: 400 });
@@ -25,8 +25,8 @@ export async function POST(req) {
       );
     }
 
-    const content = await chatWithProvider(provider, input);
-    return Response.json({ content });
+    const content = await chatWithProvider(provider, input, model);
+    return Response.json({ content, model: model ?? null });
   } catch (error) {
     console.error("AI chat error:", error);
     return Response.json(

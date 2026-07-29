@@ -18,8 +18,10 @@ import {
   IELTS_EVALUATION_PROMPT,
 } from "@/constant/speaking";
 import { getProvider } from "@/constant/providers";
+import { getModelLabel } from "@/constant/models";
 import { callAI, usePuterAI } from "@/lib/client/ai";
 import { saveScoreEntry } from "@/lib/client/scoreHistory";
+import { getModelForProvider } from "@/lib/client/modelPreferences";
 
 const SPEAKING_LOADING_STEPS = [
   "Analyzing fluency & coherence...",
@@ -65,6 +67,15 @@ export default function SpeakingExam({ providerId }) {
   const [evaluationResult, setEvaluationResult] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [activeModel, setActiveModel] = useState(() => getModelForProvider(providerId));
+
+  useEffect(() => {
+    const syncModel = () => setActiveModel(getModelForProvider(providerId));
+    syncModel();
+    window.addEventListener("ieltsscore:model-preferences-changed", syncModel);
+    return () =>
+      window.removeEventListener("ieltsscore:model-preferences-changed", syncModel);
+  }, [providerId]);
 
   const recognitionRef = useRef(null);
   const currentAudioRef = useRef(null);
@@ -426,6 +437,10 @@ export default function SpeakingExam({ providerId }) {
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
               AI Engine: <span className="text-indigo-400">{provider.name}</span>
+              {" · "}
+              <span className="text-gray-400">
+                {getModelLabel(providerId, activeModel)}
+              </span>
               {" · "}Neural Examiner Voice
             </p>
           </div>
