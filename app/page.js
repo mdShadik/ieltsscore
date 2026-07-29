@@ -1,124 +1,185 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import QuestionPanel from '@/components/QuestionPanel';
-import AnswerPanel from '@/components/AnswerPanel';
-import NavigationFooter from '@/components/NavigationFooter';
-import EvaluationModal from '@/components/EvaluationModal';
+import Link from 'next/link';
+import { 
+  Sparkles, 
+  LogIn, 
+  Bot, 
+  Cpu, 
+  Zap, 
+  CheckCircle, 
+  ArrowRight,
+  GraduationCap
+} from 'lucide-react';
 
-export default function ExamPage() {
-  const [puter, setPuter] = useState(null);
-  const [activePart, setActivePart] = useState('part1');
-
-  // Exam Data State
-  const [questions, setQuestions] = useState({
-    part1: {
-      type: 'Formal Letter',
-      prompt: 'The system used for rubbish/garbage area collection in your local area is not working properly.\n\nThis is causing problems for you and your neighbours.\n\nWrite a letter to the local council. In your letter:\n• Describe how the rubbish collection system is not working properly\n• Explain how this is affecting you and your neighbours\n• Suggest what should be done about the problem'
+export default function LandingPage() {
+  const aiProviders = [
+    {
+      id: 'puter',
+      name: 'Puter AI',
+      description: 'Keyless & Serverless evaluation powered by Puter.js (GPT-4o routing).',
+      active: true,
+      href: '/writing/puter',
+      tag: 'Active & Free',
+      icon: Cpu,
+      color: 'border-emerald-500/40 bg-emerald-950/20 text-emerald-400 hover:border-emerald-500',
     },
-    part2: {
-      type: 'General Essay',
-      prompt: 'Some people believe that university education should be available to everyone free of charge. To what extent do you agree or disagree?'
-    }
-  });
-
-  const [answers, setAnswers] = useState({
-    part1: '',
-    part2: ''
-  });
-
-  // Modal & AI States
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [evalResult, setEvalResult] = useState('');
-
-  useEffect(() => {
-    import('@heyputer/puter.js').then((mod) => setPuter(mod.puter));
-  }, []);
-
-  const handleUpdateQuestion = (part, data) => {
-    setQuestions((prev) => ({
-      ...prev,
-      [part]: data
-    }));
-  };
-
-  const handleAnswerChange = (part, text) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [part]: text
-    }));
-  };
-
-  const handleSubmitEvaluation = async () => {
-    const currentQuestion = questions[activePart];
-    const currentAnswer = answers[activePart];
-
-    if (!currentAnswer.trim()) {
-      alert(`Please write an answer for ${activePart === 'part1' ? 'Part 1' : 'Part 2'} before submitting.`);
-      return;
-    }
-
-    setIsModalOpen(true);
-    setLoading(true);
-    setEvalResult('');
-
-    const systemPrompt = `You are a certified, strict IELTS General Training Writing Examiner.
-Evaluate the candidate's writing based strictly on the official IELTS band descriptors:
-1. OVERALL BAND SCORE (rounded to nearest 0.5)
-2. SUB-SCORES:
-   - Task Achievement / Response (0.0-9.0)
-   - Coherence & Cohesion (0.0-9.0)
-   - Lexical Resource (0.0-9.0)
-   - Grammatical Range & Accuracy (0.0-9.0)
-3. SPECIFIC IMPROVEMENTS & CORRECTIONS
-4. BAND 8.0+ REWRITTEN MODEL ANSWER`;
-
-    const fullPrompt = `${systemPrompt}\n\nEVALUATION TASK: ${activePart === 'part1' ? 'Task 1 Letter' : 'Task 2 Essay'}\nTYPE: ${currentQuestion.type}\nPROMPT:\n${currentQuestion.prompt}\n\nCANDIDATE SUBMISSION:\n${currentAnswer}`;
-
-    try {
-      if (!puter) throw new Error("AI engine loading...");
-      const res = await puter.ai.chat(fullPrompt, { model: 'gpt-4o' });
-      setEvalResult(res.toString());
-    } catch (err) {
-      setEvalResult(`Error during evaluation: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+    {
+      id: 'gemini',
+      name: 'Google Gemini',
+      description: 'Evaluate essays using Google’s high-speed Gemini 2.5 Flash model.',
+      active: false,
+      href: '#',
+      tag: 'Coming Soon',
+      icon: Sparkles,
+      color: 'border-gray-800 bg-[#161616] text-gray-500 hover:border-gray-700',
+    },
+    {
+      id: 'chatgpt',
+      name: 'OpenAI ChatGPT',
+      description: 'Direct API integration with OpenAI GPT-4o models.',
+      active: false,
+      href: '#',
+      tag: 'Coming Soon',
+      icon: Bot,
+      color: 'border-gray-800 bg-[#161616] text-gray-500 hover:border-gray-700',
+    },
+    {
+      id: 'claude',
+      name: 'Anthropic Claude AI',
+      description: 'Detailed writing feedback using Claude 3.5 Sonnet.',
+      active: false,
+      href: '#',
+      tag: 'Coming Soon',
+      icon: Zap,
+      color: 'border-gray-800 bg-[#161616] text-gray-500 hover:border-gray-700',
+    },
+  ];
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#121212] select-none">
+    <div className="min-h-screen bg-[#101010] text-gray-100 flex flex-col font-sans">
       
-      {/* Split Exam Screen Area */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-        <QuestionPanel
-          activePart={activePart}
-          questionData={questions[activePart]}
-          onUpdateQuestion={handleUpdateQuestion}
-        />
-        <AnswerPanel
-          activePart={activePart}
-          answer={answers[activePart]}
-          onAnswerChange={handleAnswerChange}
-        />
-      </div>
+      {/* Navigation Header */}
+      <nav className="border-b border-[#222] bg-[#141414] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-lg text-indigo-400">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <span className="font-extrabold text-lg tracking-tight text-white">
+            IELTS<span className="text-indigo-400">Score</span>.ai
+          </span>
+        </div>
 
-      {/* IELTS Bottom Navigation Footer */}
-      <NavigationFooter
-        activePart={activePart}
-        onSelectPart={setActivePart}
-        onSubmit={handleSubmitEvaluation}
-        isEvaluating={loading}
-      />
+        {/* Static Login Button */}
+        <button
+          onClick={() => alert("Login feature is static for now.")}
+          className="flex items-center gap-2 bg-[#222] hover:bg-[#2e2e2e] border border-[#333] text-gray-200 text-sm font-semibold px-4 py-2 rounded-lg transition"
+        >
+          <LogIn className="w-4 h-4 text-gray-400" />
+          <span>Login / Sign Up</span>
+        </button>
+      </nav>
 
-      {/* Examiner Report Pop-up */}
-      <EvaluationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        loading={loading}
-        result={evalResult}
-      />
+      {/* Hero Section */}
+      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 md:py-20 space-y-16">
+        
+        <div className="text-center space-y-5 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" /> Official IELTS Assessment Criteria
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight">
+            Score Your IELTS Writing Before Exam Day
+          </h1>
+          <p className="text-gray-400 text-base md:text-lg leading-relaxed">
+            Practice in an authentic Computer-Delivered IELTS environment. Select an AI engine below to get detailed band scores, sub-criterion analysis, and Band 8.0+ model rewrites.
+          </p>
+        </div>
+
+        {/* AI Provider Selector Cards */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest text-center">
+            Choose AI Provider
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {aiProviders.map((provider) => {
+              const IconComponent = provider.icon;
+
+              const CardContent = (
+                <div className={`p-6 rounded-2xl border transition-all h-full flex flex-col justify-between ${provider.color}`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-black/40 rounded-xl border border-white/5">
+                        <IconComponent className="w-6 h-6" />
+                      </div>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                        provider.active 
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' 
+                          : 'bg-gray-800/50 border-gray-700 text-gray-500'
+                      }`}>
+                        {provider.tag}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white mb-2">{provider.name}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                      {provider.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm font-bold pt-4 border-t border-white/5">
+                    {provider.active ? (
+                      <>
+                        <span>Start Practice Test</span>
+                        <ArrowRight className="w-4 h-4 ml-auto" />
+                      </>
+                    ) : (
+                      <span className="text-gray-500 text-xs">Currently Unavailable</span>
+                    )}
+                  </div>
+                </div>
+              );
+
+              return provider.active ? (
+                <Link key={provider.id} href={provider.href} className="block">
+                  {CardContent}
+                </Link>
+              ) : (
+                <div key={provider.id} className="cursor-not-allowed opacity-75">
+                  {CardContent}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-[#222]">
+          <div className="bg-[#141414] border border-[#222] p-5 rounded-xl space-y-2">
+            <CheckCircle className="w-5 h-5 text-indigo-400" />
+            <h4 className="font-bold text-white text-sm">Strict IELTS Descriptors</h4>
+            <p className="text-xs text-gray-400">Scored across Task Achievement, Coherence, Lexical Resource, and Grammar.</p>
+          </div>
+
+          <div className="bg-[#141414] border border-[#222] p-5 rounded-xl space-y-2">
+            <CheckCircle className="w-5 h-5 text-indigo-400" />
+            <h4 className="font-bold text-white text-sm">Real Test Interface</h4>
+            <p className="text-xs text-gray-400">Dark-mode split screen matching the official computer-delivered test environment.</p>
+          </div>
+
+          <div className="bg-[#141414] border border-[#222] p-5 rounded-xl space-y-2">
+            <CheckCircle className="w-5 h-5 text-indigo-400" />
+            <h4 className="font-bold text-white text-sm">Instant Band 8.0 Rewrites</h4>
+            <p className="text-xs text-gray-400">Compare your essay directly against examiner-level rewritten responses.</p>
+          </div>
+        </div>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-[#222] bg-[#141414] py-6 text-center text-xs text-gray-500">
+        IELTS General Training Writing Evaluator &bull; Powered by Puter.js
+      </footer>
 
     </div>
   );
