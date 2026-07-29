@@ -7,8 +7,8 @@ export default function EvaluationModal({ isOpen, onClose, loading, result }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[60] flex h-screen w-screen flex-col overflow-hidden bg-[#121212]">
+      <div className="flex h-full w-full flex-col">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#2d2d2d] bg-[#141414]">
