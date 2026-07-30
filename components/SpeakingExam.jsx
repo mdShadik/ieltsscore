@@ -16,6 +16,11 @@ import { getModelLabel } from "@/constant/models";
 import { callAI, usePuterAI } from "@/lib/client/ai";
 import { saveScoreEntry } from "@/lib/client/scoreHistory";
 import { getModelForProvider } from "@/lib/client/modelPreferences";
+import { FilteredAudioCapture } from "@/lib/client/filteredAudioCapture";
+import {
+  preloadWhisperModel,
+  transcribeAudioBlob,
+} from "@/lib/client/whisperTranscriber";
 
 const SPEAKING_LOADING_STEPS = [
   "Analyzing fluency & coherence...",
@@ -51,12 +56,16 @@ export default function SpeakingExam({ providerId }) {
   const { puter, loading: puterLoading, error: puterError } = usePuterAI();
 
   const [inputMode, setInputMode] = useState(null);
+  const [voiceEngine, setVoiceEngine] = useState(null);
   const [testPhase, setTestPhase] = useState("IDLE");
   const [conversationHistory, setConversationHistory] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [modelLoadProgress, setModelLoadProgress] = useState(0);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   const [part1AnswerCount, setPart1AnswerCount] = useState(0);
   const [part3AnswerCount, setPart3AnswerCount] = useState(0);
@@ -70,6 +79,7 @@ export default function SpeakingExam({ providerId }) {
   const [activeModel, setActiveModel] = useState(() => getModelForProvider(providerId));
 
   const recognitionRef = useRef(null);
+  const audioCaptureRef = useRef(null);
   const currentAudioRef = useRef(null);
   const handlePart2FinishedRef = useRef(null);
   const wantsListeningRef = useRef(false);
@@ -143,6 +153,12 @@ export default function SpeakingExam({ providerId }) {
 
   const stopListening = useCallback(() => {
     wantsListeningRef.current = false;
+
+    if (audioCaptureRef.current) {
+      audioCaptureRef.current.abort();
+      audioCaptureRef.current = null;
+    }
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -153,6 +169,33 @@ export default function SpeakingExam({ providerId }) {
     setIsListening(false);
     setInterimTranscript("");
   }, []);
+
+  useEffect(() => {
+    if (inputMode !== "voice" || voiceEngine !== "transformer") return;
+
+    let cancelled = false;
+    setIsModelLoading(true);
+    setModelLoadProgress(0);
+
+    preloadWhisperModel((progress) => {
+      if (!cancelled) setModelLoadProgress(progress);
+    })
+      .then(() => {
+        if (!cancelled) setIsModelLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsModelLoading(false);
+          setAiError(
+            "Could not load Whisper model. Check your connection and try again."
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inputMode, voiceEngine]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -217,18 +260,42 @@ export default function SpeakingExam({ providerId }) {
   }, []);
 
   const startListening = useCallback(
-    (clearFirst = true) => {
-      if (!recognitionRef.current) {
-        alert("Speech recognition is not supported. Please use Chrome, Edge, or Safari.");
-        return;
-      }
-      if (isPlayingVoice || isProcessing) return;
+    async (clearFirst = true) => {
+      if (isPlayingVoice || isProcessing || isTranscribing) return;
 
       if (clearFirst) {
         setTranscript("");
         setInterimTranscript("");
         transcriptRef.current = "";
         interimRef.current = "";
+      }
+
+      if (voiceEngine === "transformer") {
+        try {
+          if (isModelLoading) {
+            await preloadWhisperModel((progress) => setModelLoadProgress(progress));
+          }
+
+          const capture = new FilteredAudioCapture();
+          await capture.start();
+          audioCaptureRef.current = capture;
+          wantsListeningRef.current = true;
+          setIsListening(true);
+        } catch (err) {
+          console.error("Transformer recording error:", err);
+          setAiError(
+            err?.name === "NotAllowedError"
+              ? "Microphone permission denied. Allow mic access and try again."
+              : "Could not start recording. Please try again."
+          );
+          setIsListening(false);
+        }
+        return;
+      }
+
+      if (!recognitionRef.current) {
+        alert("Speech recognition is not supported. Please use Chrome, Edge, or Safari.");
+        return;
       }
 
       wantsListeningRef.current = true;
@@ -254,7 +321,13 @@ export default function SpeakingExam({ providerId }) {
         }, 250);
       }
     },
-    [isPlayingVoice, isProcessing]
+    [
+      isPlayingVoice,
+      isProcessing,
+      isTranscribing,
+      isModelLoading,
+      voiceEngine,
+    ]
   );
 
   const toggleTextModeMic = () => {
@@ -289,6 +362,7 @@ export default function SpeakingExam({ providerId }) {
 
   const startTest = async () => {
     if (!inputMode) return;
+    if (inputMode === "voice" && !voiceEngine) return;
 
     stopAudio();
     stopListening();
@@ -318,6 +392,15 @@ export default function SpeakingExam({ providerId }) {
     stopListening();
     setTestPhase("IDLE");
     setInputMode(null);
+    setVoiceEngine(null);
+    setIsTranscribing(false);
+    setIsModelLoading(false);
+    setModelLoadProgress(0);
+  };
+
+  const handleInputModeSelect = (mode) => {
+    setInputMode(mode);
+    if (mode !== "voice") setVoiceEngine(null);
   };
 
   const handleNextPart1Turn = async (answerOverride) => {
@@ -490,8 +573,35 @@ export default function SpeakingExam({ providerId }) {
     }
   };
 
-  const handleVoiceSubmit = () => {
-    const answer = getAnswer();
+  const handleVoiceSubmit = async () => {
+    let answer = getAnswer();
+
+    if (voiceEngine === "transformer" && isListening && audioCaptureRef.current) {
+      wantsListeningRef.current = false;
+      setIsListening(false);
+      setIsTranscribing(true);
+
+      try {
+        const blob = await audioCaptureRef.current.stop();
+        audioCaptureRef.current = null;
+        const text = await transcribeAudioBlob(blob);
+        answer = text;
+        setTranscript(text);
+        transcriptRef.current = text;
+        setInterimTranscript("");
+        interimRef.current = "";
+      } catch (err) {
+        console.error("Whisper transcription error:", err);
+        setAiError("Transcription failed. Please try recording again.");
+        setIsTranscribing(false);
+        return;
+      } finally {
+        setIsTranscribing(false);
+      }
+    }
+
+    if (!answer) return;
+
     if (testPhase === "PART1") handleNextPart1Turn(answer);
     else if (testPhase === "PART2_SPEAK") handlePart2Finished(answer);
     else if (testPhase === "PART3") handlePart3Turn(answer);
@@ -528,7 +638,11 @@ export default function SpeakingExam({ providerId }) {
 
   const phaseIndex = getPhaseIndex(testPhase);
   const isActive = !["IDLE", "EVALUATING", "FINISHED"].includes(testPhase);
-  const inputDisabled = isPlayingVoice || isProcessing;
+  const inputDisabled =
+    isPlayingVoice || isProcessing || isTranscribing || isModelLoading;
+
+  const voiceEngineLabel =
+    voiceEngine === "transformer" ? "Whisper" : voiceEngine === "browser" ? "Browser" : null;
   const showResponseUI = isActive && needsResponseInput(testPhase);
 
   return (
@@ -547,7 +661,12 @@ export default function SpeakingExam({ providerId }) {
           <div className="text-center min-w-0 flex-1">
             {isActive && (
               <p className="text-[10px] text-gray-500 truncate">
-                {getPhaseLabel(testPhase)} · {inputMode === "voice" ? "Mic" : "Text"}
+                {getPhaseLabel(testPhase)} ·{" "}
+                {inputMode === "voice"
+                  ? voiceEngineLabel
+                    ? `Mic (${voiceEngineLabel})`
+                    : "Mic"
+                  : "Text"}
               </p>
             )}
           </div>
@@ -588,7 +707,8 @@ export default function SpeakingExam({ providerId }) {
             </h1>
             <p className="text-xs text-gray-500 mt-1">
               {provider.name} · {getModelLabel(providerId, activeModel)}
-              {inputMode && ` · ${inputMode === "voice" ? "Mic mode" : "Text mode"}`}
+              {inputMode &&
+                ` · ${inputMode === "voice" ? (voiceEngineLabel ? `Mic · ${voiceEngineLabel}` : "Mic mode") : "Text mode"}`}
             </p>
           </div>
           {isActive && (
@@ -658,13 +778,36 @@ export default function SpeakingExam({ providerId }) {
                   Full 3-part IELTS interview with neural voice examiner.
                 </p>
               </div>
-              <InputModePicker selected={inputMode} onSelect={setInputMode} />
+              <InputModePicker
+                selected={inputMode}
+                voiceEngine={voiceEngine}
+                onSelect={handleInputModeSelect}
+                onVoiceEngineSelect={setVoiceEngine}
+              />
+              {inputMode === "voice" && voiceEngine === "transformer" && isModelLoading && (
+                <p className="text-center text-xs text-violet-400/80">
+                  Downloading Whisper model… {modelLoadProgress > 0 ? `${modelLoadProgress}%` : ""}
+                </p>
+              )}
               <button
                 onClick={startTest}
-                disabled={!inputMode || (provider.clientSide && puterLoading)}
+                disabled={
+                  !inputMode ||
+                  (inputMode === "voice" && !voiceEngine) ||
+                  (inputMode === "voice" &&
+                    voiceEngine === "transformer" &&
+                    isModelLoading) ||
+                  (provider.clientSide && puterLoading)
+                }
                 className="w-full py-4 md:py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold rounded-2xl text-base transition-all"
               >
-                {provider.clientSide && puterLoading ? "Loading AI…" : "Start Exam"}
+                {provider.clientSide && puterLoading
+                  ? "Loading AI…"
+                  : inputMode === "voice" &&
+                      voiceEngine === "transformer" &&
+                      isModelLoading
+                    ? "Loading Whisper…"
+                    : "Start Exam"}
               </button>
             </div>
           )}
@@ -767,10 +910,18 @@ export default function SpeakingExam({ providerId }) {
                     onSubmit={handleVoiceSubmit}
                     disabled={inputDisabled}
                     isProcessing={isProcessing}
+                    isTranscribing={isTranscribing}
+                    isModelLoading={isModelLoading}
+                    modelLoadProgress={modelLoadProgress}
+                    voiceEngine={voiceEngine}
                     hint={
-                      testPhase === "PART2_SPEAK"
-                        ? "Tap mic to speak · Tap wave when done"
-                        : "Tap mic to answer · Tap wave to submit"
+                      voiceEngine === "transformer"
+                        ? testPhase === "PART2_SPEAK"
+                          ? "Tap mic · speak · tap wave (Whisper transcribes on submit)"
+                          : "Tap mic · speak · tap wave to transcribe & submit"
+                        : testPhase === "PART2_SPEAK"
+                          ? "Tap mic to speak · Tap wave when done"
+                          : "Tap mic to answer · Tap wave to submit"
                     }
                   />
                 </div>
