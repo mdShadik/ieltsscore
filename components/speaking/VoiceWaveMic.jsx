@@ -99,7 +99,12 @@ export default function VoiceWaveMic({
           <RefreshCw className="w-10 h-10 text-indigo-300 animate-spin" />
         ) : isListening ? (
           <>
-            <VoiceVisualizer active={isListening} className="mb-2" />
+            <VoiceVisualizer
+              active={isListening}
+              voiceEngine={voiceEngine}
+              displayText={displayText}
+              className="mb-2"
+            />
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-400 pb-2">
               Tap wave to submit
             </span>
