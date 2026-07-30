@@ -15,6 +15,7 @@ export default function VoiceWaveMic({
   isModelLoading,
   modelLoadProgress,
   voiceEngine,
+  getVolume,
   hint = "Tap mic to speak · Tap wave to submit",
 }) {
   const displayText = [transcript, interimTranscript].filter(Boolean).join(" ").trim();
@@ -104,6 +105,7 @@ export default function VoiceWaveMic({
               voiceEngine={voiceEngine}
               displayText={displayText}
               className="mb-2"
+              getVolume={getVolume}
             />
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-400 pb-2">
               Tap wave to submit

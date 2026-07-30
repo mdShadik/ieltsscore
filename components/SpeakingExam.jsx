@@ -933,6 +933,7 @@ export default function SpeakingExam({ providerId }) {
                     transcript={transcript}
                     interimTranscript={interimTranscript}
                     onStart={() => startListening(true)}
+                    getVolume={() => audioCaptureRef.current?.getVolume() || 0}
                     onSubmit={handleVoiceSubmit}
                     disabled={inputDisabled}
                     isProcessing={isProcessing}
