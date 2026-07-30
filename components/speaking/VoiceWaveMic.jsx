@@ -1,31 +1,7 @@
 "use client";
 
 import { Mic, RefreshCw } from "lucide-react";
-
-function WaveBars({ active }) {
-  const bars = [0, 1, 2, 3, 4, 5, 6];
-
-  return (
-    <div className="flex items-center justify-center gap-1.5 h-16 px-4">
-      {bars.map((i) => (
-        <div
-          key={i}
-          className={`w-1.5 md:w-2 rounded-full bg-indigo-400 ${
-            active ? "animate-speaking-wave" : "h-2 opacity-40"
-          }`}
-          style={
-            active
-              ? {
-                  animationDelay: `${i * 0.08}s`,
-                  height: `${14 + (i % 3) * 10}px`,
-                }
-              : { height: "8px" }
-          }
-        />
-      ))}
-    </div>
-  );
-}
+import VoiceVisualizer from "./VoiceVisualizer";
 
 export default function VoiceWaveMic({
   isListening,
@@ -123,7 +99,7 @@ export default function VoiceWaveMic({
           <RefreshCw className="w-10 h-10 text-indigo-300 animate-spin" />
         ) : isListening ? (
           <>
-            <WaveBars active />
+            <VoiceVisualizer active={isListening} className="mb-2" />
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-indigo-400 pb-2">
               Tap wave to submit
             </span>

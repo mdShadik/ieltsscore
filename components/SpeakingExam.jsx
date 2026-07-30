@@ -330,6 +330,32 @@ export default function SpeakingExam({ providerId }) {
     ]
   );
 
+  useEffect(() => {
+    if (
+      !isPlayingVoice &&
+      inputMode === "voice" &&
+      ["PART1", "PART2_SPEAK", "PART3"].includes(testPhase)
+    ) {
+      if (!isListening && !isProcessing && !isTranscribing && !isModelLoading) {
+        const timer = setTimeout(() => {
+          if (!isPlayingVoice && wantsListeningRef.current === false) {
+            void startListening(true);
+          }
+        }, 400);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [
+    isPlayingVoice,
+    inputMode,
+    testPhase,
+    isListening,
+    isProcessing,
+    isTranscribing,
+    isModelLoading,
+    startListening,
+  ]);
+
   const toggleTextModeMic = () => {
     if (isListening) stopListening();
     else startListening(false);
