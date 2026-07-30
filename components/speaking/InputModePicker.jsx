@@ -118,7 +118,7 @@ export default function InputModePicker({
                 <h4 className="font-bold text-white text-sm">Transformer.js</h4>
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed">
-                Whisper-tiny runs locally with a noise filter. Better accents &
+                Whisper-base runs locally with a noise filter. Better accents &
                 background noise handling — free, private.
               </p>
             </button>
