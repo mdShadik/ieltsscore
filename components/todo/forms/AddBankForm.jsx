@@ -13,6 +13,7 @@ export default function AddBankForm({ onBankAdded }) {
     name: '',
     description: '',
     initialBalance: '',
+    minMonthlyBalance: '',
     type: BANK_TYPES[0],
   });
 
@@ -23,9 +24,10 @@ export default function AddBankForm({ onBankAdded }) {
     onBankAdded({
       ...formData,
       initialBalance: parseFloat(formData.initialBalance),
+      minMonthlyBalance: parseFloat(formData.minMonthlyBalance || '0'),
     });
 
-    setFormData({ name: '', description: '', initialBalance: '', type: BANK_TYPES[0] });
+    setFormData({ name: '', description: '', initialBalance: '', minMonthlyBalance: '', type: BANK_TYPES[0] });
   };
 
   return (
@@ -58,7 +60,7 @@ export default function AddBankForm({ onBankAdded }) {
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Initial Balance (Rs) *</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Initial Balance ($) *</label>
         <input
           type="number"
           step="0.01"
@@ -68,6 +70,19 @@ export default function AddBankForm({ onBankAdded }) {
           onChange={(e) => setFormData({ ...formData, initialBalance: e.target.value })}
           className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
         />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Minimum Monthly Balance ($)</label>
+        <input
+          type="number"
+          step="0.01"
+          placeholder="0.00 (Reserved minimum balance)"
+          value={formData.minMonthlyBalance}
+          onChange={(e) => setFormData({ ...formData, minMonthlyBalance: e.target.value })}
+          className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
+        />
+        <p className="text-[11px] text-gray-500 mt-1">This amount will be reserved/hidden unless enabled in Profile settings.</p>
       </div>
 
       <div>

@@ -39,8 +39,14 @@ export default function TransactionList({ transactions }) {
               <span className={`text-base font-extrabold ${isDebit ? 'text-rose-400' : 'text-emerald-400'}`}>
                 {isDebit ? '-' : '+'}Rs. {Number(tx.amount).toFixed(2)}
               </span>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
+                {new Date(tx.date).toLocaleString(undefined, { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </p>
             </div>
           </div>

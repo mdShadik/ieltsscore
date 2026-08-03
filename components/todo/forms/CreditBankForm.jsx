@@ -1,10 +1,27 @@
 'use client';
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { getUseMinBalance } from '@/lib/client/managerSettings';
 
 export default function CreditBankForm({ banks, onCreditAdded }) {
   const [bankId, setBankId] = useState(banks[0]?.id || '');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [useMinBalance, setUseMinBalanceState] = useState(false);
+
+  useEffect(() => {
+    setUseMinBalanceState(getUseMinBalance());
+
+    const handleSettingsChange = () => setUseMinBalanceState(getUseMinBalance());
+    window.addEventListener('ieltsscore:manager-settings-changed', handleSettingsChange);
+    return () => window.removeEventListener('ieltsscore:manager-settings-changed', handleSettingsChange);
+  }, []);
+
+  const calculateUsable = (b) => {
+    const current = Number(b.currentBalance || 0);
+    const minReserve = Number(b.minMonthlyBalance || 0);
+    return useMinBalance ? current : Math.max(0, current - minReserve);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,16 +56,19 @@ export default function CreditBankForm({ banks, onCreditAdded }) {
           {banks.length === 0 && (
             <option value="" className="bg-[#141414] text-gray-500">No banks available</option>
           )}
-          {banks.map((b) => (
-            <option key={b.id} value={b.id} className="bg-[#141414] text-white">
-              {b.name} (Rs. {Number(b.currentBalance).toFixed(2)})
-            </option>
-          ))}
+          {banks.map((b) => {
+            const usable = calculateUsable(b);
+            return (
+              <option key={b.id} value={b.id} className="bg-[#141414] text-white">
+                {b.name} (Rs. {usable.toFixed(2)})
+              </option>
+            );
+          })}
         </select>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Credit Amount (Rs) *</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Credit Amount (Rs.) *</label>
         <input
           type="number"
           step="0.01"

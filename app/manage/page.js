@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getBanks, getTransactions } from '@/lib/db';
+import { getUseMinBalance } from '@/lib/client/managerSettings';
 import TransactionList from '@/components/todo/history/TransactionList';
 import { 
   Wallet, ArrowDownRight, ArrowUpRight, PlusCircle, 
-  History, CheckSquare, ChevronRight, Building2, ArrowRight
+  History, CheckSquare, ChevronRight, Building2, ArrowRight, ShieldAlert
 } from 'lucide-react';
 
 export default function ManageDashboard() {
   const [banks, setBanks] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [useMinBalance, setUseMinBalanceState] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -20,6 +22,7 @@ export default function ManageDashboard() {
       const t = await getTransactions();
       setBanks(b);
       setTransactions(t);
+      setUseMinBalanceState(getUseMinBalance());
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -29,9 +32,19 @@ export default function ManageDashboard() {
 
   useEffect(() => {
     loadData();
+
+    const handleSettingsChange = () => setUseMinBalanceState(getUseMinBalance());
+    window.addEventListener('ieltsscore:manager-settings-changed', handleSettingsChange);
+    return () => window.removeEventListener('ieltsscore:manager-settings-changed', handleSettingsChange);
   }, []);
 
-  const totalBalance = banks.reduce((acc, b) => acc + Number(b.currentBalance || 0), 0);
+  const calculateUsableBalance = (b) => {
+    const current = Number(b.currentBalance || 0);
+    const minReserve = Number(b.minMonthlyBalance || 0);
+    return useMinBalance ? current : Math.max(0, current - minReserve);
+  };
+
+  const totalUsableBalance = banks.reduce((acc, b) => acc + calculateUsableBalance(b), 0);
   const recentTransactions = transactions.slice(0, 5);
 
   const quickActions = [
@@ -85,7 +98,7 @@ export default function ManageDashboard() {
         
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-indigo-300/80 flex items-center gap-1.5">
-            <Wallet className="w-4 h-4 text-indigo-400" /> Net Balance
+            <Wallet className="w-4 h-4 text-indigo-400" /> Usable Net Balance
           </span>
           <span className="text-[11px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full font-medium">
             {banks.length} {banks.length === 1 ? 'Account' : 'Accounts'}
@@ -94,9 +107,15 @@ export default function ManageDashboard() {
 
         <div className="mt-3">
           <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Rs. {totalBalance.toFixed(2)}
+            Rs. {totalUsableBalance.toFixed(2)}
           </h2>
-          <p className="text-xs text-gray-400 mt-1">Combined balance across active banks</p>
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+            {useMinBalance ? (
+              <span className="text-amber-400 font-medium">Includes minimum balance reserves</span>
+            ) : (
+              <span>Excludes reserved minimum monthly balances</span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -127,28 +146,43 @@ export default function ManageDashboard() {
               </Link>
             </div>
           ) : (
-            banks.map((b) => (
-              <div
-                key={b.id}
-                className="min-w-[200px] sm:min-w-[220px] bg-[#141414] border border-indigo-500/20 hover:border-indigo-500/40 p-4 rounded-2xl shadow-md shrink-0 flex flex-col justify-between space-y-4 transition group"
-              >
-                <div className="flex justify-between items-start">
+            banks.map((b) => {
+              const usable = calculateUsableBalance(b);
+              const hasMinReserve = Number(b.minMonthlyBalance || 0) > 0;
+
+              return (
+                <div
+                  key={b.id}
+                  className="min-w-[200px] sm:min-w-[220px] bg-[#141414] border border-indigo-500/20 hover:border-indigo-500/40 p-4 rounded-2xl shadow-md shrink-0 flex flex-col justify-between space-y-4 transition group"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
+                        {b.type}
+                      </span>
+                      <h4 className="font-bold text-white text-sm mt-2 group-hover:text-indigo-300 transition truncate max-w-[140px]">
+                        {b.name}
+                      </h4>
+                    </div>
+                  </div>
+
                   <div>
-                    <span className="text-[10px] bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
-                      {b.type}
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+                      {useMinBalance ? 'Total Balance' : 'Usable Balance'}
                     </span>
-                    <h4 className="font-bold text-white text-sm mt-2 group-hover:text-indigo-300 transition truncate max-w-[140px]">
-                      {b.name}
-                    </h4>
+                    <span className="text-lg font-extrabold text-white">Rs. {usable.toFixed(2)}</span>
+                    
+                    {hasMinReserve && (
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {useMinBalance 
+                          ? `(Min reserve: Rs. ${Number(b.minMonthlyBalance).toFixed(2)})`
+                          : `(Reserves Rs. ${Number(b.minMonthlyBalance).toFixed(2)} hidden)`}
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Balance</span>
-                  <span className="text-lg font-extrabold text-white">Rs. {Number(b.currentBalance || 0).toFixed(2)}</span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
