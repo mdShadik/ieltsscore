@@ -241,7 +241,7 @@ export default function ManageDashboard() {
             Loading recent transactions...
           </div>
         ) : (
-          <TransactionList transactions={recentTransactions} />
+          <TransactionList transactions={recentTransactions} onDeleted={loadData} />
         )}
       </div>
     </div>

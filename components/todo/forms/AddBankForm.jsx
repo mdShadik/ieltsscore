@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import BankSearchSelect from './BankSearchSelect';
 
 const BANK_TYPES = [
   'Travel Expenses',
@@ -20,7 +21,7 @@ export default function AddBankForm({ onBankAdded }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.initialBalance) return;
-    
+
     onBankAdded({
       ...formData,
       initialBalance: parseFloat(formData.initialBalance),
@@ -33,19 +34,34 @@ export default function AddBankForm({ onBankAdded }) {
   return (
     <form onSubmit={handleSubmit} className="bg-[#141414] p-4 sm:p-6 rounded-2xl shadow-lg border border-[#222] space-y-4">
       <h3 className="text-lg font-bold text-white">Add New Bank</h3>
-      
+
+      {/* Bank Name — searchable select */}
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Bank Name *</label>
-        <input
-          type="text"
-          required
-          placeholder="e.g. HDFC Salary Account"
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          Bank Name *
+        </label>
+        <BankSearchSelect
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
+          onChange={(name) => setFormData({ ...formData, name })}
+          required
         />
+        {/* Allow user to also type a custom name not in list */}
+        <p className="text-[11px] text-gray-500 mt-1.5">
+          Can't find your bank?{' '}
+          <button
+            type="button"
+            className="text-indigo-400 hover:underline font-medium"
+            onClick={() => {
+              const custom = prompt('Enter your bank name:');
+              if (custom?.trim()) setFormData({ ...formData, name: custom.trim() });
+            }}
+          >
+            Enter manually
+          </button>
+        </p>
       </div>
 
+      {/* Type */}
       <div>
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Type *</label>
         <select
@@ -59,8 +75,11 @@ export default function AddBankForm({ onBankAdded }) {
         </select>
       </div>
 
+      {/* Initial Balance */}
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Initial Balance ($) *</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          Initial Balance (Rs.) *
+        </label>
         <input
           type="number"
           step="0.01"
@@ -72,8 +91,11 @@ export default function AddBankForm({ onBankAdded }) {
         />
       </div>
 
+      {/* Minimum Monthly Balance */}
       <div>
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Minimum Monthly Balance ($)</label>
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          Minimum Monthly Balance (Rs.)
+        </label>
         <input
           type="number"
           step="0.01"
@@ -82,9 +104,12 @@ export default function AddBankForm({ onBankAdded }) {
           onChange={(e) => setFormData({ ...formData, minMonthlyBalance: e.target.value })}
           className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition"
         />
-        <p className="text-[11px] text-gray-500 mt-1">This amount will be reserved/hidden unless enabled in Profile settings.</p>
+        <p className="text-[11px] text-gray-500 mt-1">
+          This amount will be reserved/hidden unless enabled in Profile settings.
+        </p>
       </div>
 
+      {/* Description */}
       <div>
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Description</label>
         <textarea

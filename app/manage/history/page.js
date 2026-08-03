@@ -144,7 +144,7 @@ export default function HistoryPage() {
               Showing {filteredTransactions.length} of {transactions.length} transactions
             </p>
           )}
-          <TransactionList transactions={filteredTransactions} />
+          <TransactionList transactions={filteredTransactions} onDeleted={loadData} />
         </>
       )}
     </div>
