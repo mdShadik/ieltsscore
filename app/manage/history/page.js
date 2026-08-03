@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getBanks, getTransactions, resetBankBalances } from '@/lib/db';
 import TransactionFilter from '@/components/todo/history/TransactionFilter';
 import TransactionList from '@/components/todo/history/TransactionList';
-import { History, ChevronLeft, RotateCcw } from 'lucide-react';
+import { History, ChevronLeft, RotateCcw, ArrowDownRight, ArrowUpRight, Scale } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HistoryPage() {
@@ -12,6 +12,7 @@ export default function HistoryPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
+  const [timeTab, setTimeTab] = useState('ALL');
 
   const [filters, setFilters] = useState({
     search: '',
@@ -19,6 +20,8 @@ export default function HistoryPage() {
     category: 'ALL',
     month: 'ALL',
     date: '',
+    startDate: '',
+    endDate: '',
   });
 
   const loadData = async () => {
@@ -62,6 +65,38 @@ export default function HistoryPage() {
     const matchesCategory = (filters.category || 'ALL') === 'ALL' || tx.bankType === filters.category;
 
     const txDate = new Date(tx.date);
+
+    // Time Tab Filtering
+    let matchesTimeTab = true;
+    const now = new Date();
+
+    if (timeTab === 'TODAY') {
+      matchesTimeTab =
+        txDate.getFullYear() === now.getFullYear() &&
+        txDate.getMonth() === now.getMonth() &&
+        txDate.getDate() === now.getDate();
+    } else if (timeTab === 'WEEKLY') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      matchesTimeTab = txDate >= sevenDaysAgo && txDate <= now;
+    } else if (timeTab === 'MONTHLY') {
+      matchesTimeTab =
+        txDate.getFullYear() === now.getFullYear() &&
+        txDate.getMonth() === now.getMonth();
+    } else if (timeTab === 'CUSTOM') {
+      if (filters.startDate) {
+        const start = new Date(filters.startDate);
+        start.setHours(0, 0, 0, 0);
+        matchesTimeTab = matchesTimeTab && txDate >= start;
+      }
+      if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        matchesTimeTab = matchesTimeTab && txDate <= end;
+      }
+    }
+
     const txMonthKey = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}`;
     const matchesMonth = (filters.month || 'ALL') === 'ALL' || txMonthKey === filters.month;
 
@@ -74,8 +109,19 @@ export default function HistoryPage() {
       );
     })();
 
-    return matchesSearch && matchesBank && matchesCategory && matchesMonth && matchesDate;
+    return matchesSearch && matchesBank && matchesCategory && matchesTimeTab && matchesMonth && matchesDate;
   });
+
+  // Calculate summary metrics for filtered period
+  const periodDebits = filteredTransactions
+    .filter((t) => t.type === 'debit')
+    .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+
+  const periodCredits = filteredTransactions
+    .filter((t) => t.type === 'credit')
+    .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+
+  const periodNet = periodCredits - periodDebits;
 
   const handleReset = async () => {
     if (!confirm(
@@ -126,11 +172,45 @@ export default function HistoryPage() {
         </button>
       </div>
 
+      {/* Period Summary Badges */}
+      {!loading && filteredTransactions.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-[#141414] border border-rose-500/20 p-3 rounded-2xl">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase flex items-center gap-1">
+              <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" /> Outflow
+            </span>
+            <p className="text-sm sm:text-base font-extrabold text-rose-400 mt-1">
+              Rs. {periodDebits.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="bg-[#141414] border border-emerald-500/20 p-3 rounded-2xl">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase flex items-center gap-1">
+              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> Inflow
+            </span>
+            <p className="text-sm sm:text-base font-extrabold text-emerald-400 mt-1">
+              Rs. {periodCredits.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="bg-[#141414] border border-indigo-500/20 p-3 rounded-2xl">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase flex items-center gap-1">
+              <Scale className="w-3.5 h-3.5 text-indigo-400" /> Net Flow
+            </span>
+            <p className={`text-sm sm:text-base font-extrabold mt-1 ${periodNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {periodNet >= 0 ? '+' : ''}Rs. {periodNet.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
+
       <TransactionFilter
         banks={banks}
         filters={filters}
         setFilters={setFilters}
         availableMonths={availableMonths}
+        timeTab={timeTab}
+        setTimeTab={setTimeTab}
       />
 
       {loading ? (
@@ -150,3 +230,4 @@ export default function HistoryPage() {
     </div>
   );
 }
+

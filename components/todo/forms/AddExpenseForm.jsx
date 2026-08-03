@@ -16,6 +16,48 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
     return () => window.removeEventListener('ieltsscore:manager-settings-changed', handleSettingsChange);
   }, []);
 
+  useEffect(() => {
+    if (banks.length > 0 && !bankId) {
+      setBankId(banks[0].id);
+    }
+  }, [banks, bankId]);
+
+  const activeBankId = bankId || banks[0]?.id;
+  const selectedBank = banks.find((b) => Number(b.id) === Number(activeBankId)) || banks[0];
+  const bankType = selectedBank?.type || '';
+
+  const isTravel = bankType === 'Travel Expenses' || bankType.toLowerCase().includes('travel');
+  const isGrocery = bankType === 'Grocery and other miscellaneous' || bankType.toLowerCase().includes('groc');
+  const isEmi = bankType === 'EMI' || bankType.toLowerCase().includes('emi');
+
+  const amountChips = isTravel
+    ? ['80', '100', '125', '150', '175', '200']
+    : isGrocery
+    ? ['50', '75', '100', '150']
+    : isEmi
+    ? ['10000']
+    : [];
+
+  const descriptionChips = isTravel
+    ? [
+        'Rapido - tavel to office',
+        'Rapido - Travel to home',
+        'Rapido - travel to QLA mall',
+        'Rapido - travel to zudio',
+        'Rapido - Travel to Mall',
+      ]
+    : isGrocery
+    ? [
+        'bought vegetable',
+        'bought rice',
+        'bought water',
+        'bought rice and egg',
+        'bought egg',
+        'bought kurkure',
+        'bought kurkure and others',
+      ]
+    : [];
+
   const calculateUsable = (b) => {
     const current = Number(b.currentBalance || 0);
     const minReserve = Number(b.minMonthlyBalance || 0);
@@ -24,12 +66,10 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!bankId || !amount || !description) return;
+    if (!activeBankId || !amount || !description) return;
 
-    const selectedBank = banks.find((b) => Number(b.id) === Number(bankId));
-    
     onExpenseAdded({
-      bankId: Number(bankId),
+      bankId: Number(activeBankId),
       bankName: selectedBank?.name || 'Unknown',
       bankType: selectedBank?.type || 'Others',
       type: 'debit',
@@ -48,7 +88,7 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
       <div>
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Select Bank *</label>
         <select
-          value={bankId || (banks[0]?.id || '')}
+          value={activeBankId || ''}
           onChange={(e) => setBankId(e.target.value)}
           className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm transition"
         >
@@ -66,6 +106,7 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
         </select>
       </div>
 
+      {/* Amount Input & Quick Suggestion Chips */}
       <div>
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Amount (Rs.) *</label>
         <input
@@ -77,8 +118,33 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
           onChange={(e) => setAmount(e.target.value)}
           className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm transition"
         />
+
+        {amountChips.length > 0 && (
+          <div className="space-y-1.5 mt-2">
+            <span className="text-[10px] font-semibold text-rose-400/80 uppercase tracking-wider block">
+              Quick Amounts
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {amountChips.map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setAmount(val)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition ${
+                    amount === val
+                      ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-95'
+                      : 'bg-[#1c1c1c] text-gray-300 border-[#333] hover:border-rose-500/50 hover:text-white hover:bg-rose-500/10'
+                  }`}
+                >
+                  Rs. {val}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Description Input & Quick Suggestion Chips */}
       <div>
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">For What? (Description) *</label>
         <input
@@ -89,6 +155,30 @@ export default function AddExpenseForm({ banks, onExpenseAdded }) {
           onChange={(e) => setDescription(e.target.value)}
           className="w-full px-3.5 py-2.5 rounded-xl border border-[#333] bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm transition"
         />
+
+        {descriptionChips.length > 0 && (
+          <div className="space-y-1.5 mt-2">
+            <span className="text-[10px] font-semibold text-rose-400/80 uppercase tracking-wider block">
+              Quick Descriptions
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {descriptionChips.map((desc) => (
+                <button
+                  key={desc}
+                  type="button"
+                  onClick={() => setDescription(desc)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition ${
+                    description === desc
+                      ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-95'
+                      : 'bg-[#1c1c1c] text-gray-300 border-[#333] hover:border-rose-500/50 hover:text-white hover:bg-rose-500/10'
+                  }`}
+                >
+                  {desc}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <button

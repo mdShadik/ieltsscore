@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getBanks, getTransactions } from '@/lib/db';
+import { getBanks, getTransactions, deleteBank } from '@/lib/db';
 import { getUseMinBalance } from '@/lib/client/managerSettings';
 import TransactionList from '@/components/todo/history/TransactionList';
 import { 
   Wallet, ArrowDownRight, ArrowUpRight, PlusCircle, 
-  History, CheckSquare, ChevronRight, Building2, ArrowRight, ShieldAlert
+  History, CheckSquare, ChevronRight, Building2, ArrowRight, ShieldAlert,
+  Trash2, AlertTriangle
 } from 'lucide-react';
 
 export default function ManageDashboard() {
@@ -15,6 +16,22 @@ export default function ManageDashboard() {
   const [transactions, setTransactions] = useState([]);
   const [useMinBalance, setUseMinBalanceState] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [bankToDelete, setBankToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDeleteBank = async () => {
+    if (!bankToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteBank(bankToDelete.id);
+      setBankToDelete(null);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to delete bank:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -160,10 +177,17 @@ export default function ManageDashboard() {
                       <span className="text-[10px] bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
                         {b.type}
                       </span>
-                      <h4 className="font-bold text-white text-sm mt-2 group-hover:text-indigo-300 transition truncate max-w-[140px]">
+                      <h4 className="font-bold text-white text-sm mt-2 group-hover:text-indigo-300 transition truncate max-w-[130px]">
                         {b.name}
                       </h4>
                     </div>
+                    <button
+                      onClick={() => setBankToDelete(b)}
+                      className="text-gray-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition opacity-80 hover:opacity-100 shrink-0"
+                      title="Delete account"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
                   <div>
@@ -244,6 +268,60 @@ export default function ManageDashboard() {
           <TransactionList transactions={recentTransactions} onDeleted={loadData} />
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {bankToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#141414] border border-rose-500/30 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Delete Account</h3>
+                <p className="text-xs text-gray-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="bg-[#1c1c1c] border border-[#2a2a2a] p-3.5 rounded-2xl space-y-1">
+              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider block">Account Name</span>
+              <p className="font-bold text-white text-sm">{bankToDelete.name}</p>
+              <p className="text-xs text-gray-400">
+                Current Balance: <span className="font-semibold text-white">Rs. {Number(bankToDelete.currentBalance || 0).toFixed(2)}</span>
+              </p>
+            </div>
+
+            <p className="text-xs text-rose-400/90 leading-relaxed">
+              Deleting this account will also remove all associated transaction records.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setBankToDelete(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-semibold text-gray-300 hover:text-white bg-[#222] hover:bg-[#2a2a2a] rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteBank}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-lg shadow-rose-600/20 transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deleting ? (
+                  'Deleting...'
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Account
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
