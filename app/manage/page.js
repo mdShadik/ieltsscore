@@ -7,7 +7,7 @@ import { getUseMinBalance } from '@/lib/client/managerSettings';
 import TransactionList from '@/components/todo/history/TransactionList';
 import { 
   Wallet, ArrowDownRight, ArrowUpRight, PlusCircle, 
-  History, CheckSquare, ChevronRight, Building2, ArrowRight, ShieldAlert,
+  History, Calculator, CheckSquare, ChevronRight, Building2, ArrowRight, ShieldAlert,
   Trash2, AlertTriangle
 } from 'lucide-react';
 
@@ -96,6 +96,14 @@ export default function ManageDashboard() {
       icon: History,
       color: 'from-purple-500/20 to-purple-600/10 text-purple-400 border-purple-500/30',
       iconBg: 'bg-purple-500/20 text-purple-400',
+    },
+    {
+      title: 'Calculator',
+      description: 'Quick expense calculator',
+      href: '/manage/calculator',
+      icon: Calculator,
+      color: 'from-amber-500/20 to-amber-600/10 text-amber-400 border-amber-500/30',
+      iconBg: 'bg-amber-500/20 text-amber-400',
     },
     {
       title: 'Tasks',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ArrowDownRight, ArrowUpRight, History, CheckSquare, ChevronLeft } from 'lucide-react';
+import { Home, ArrowDownRight, ArrowUpRight, History, Calculator, CheckSquare, ChevronLeft } from 'lucide-react';
 
 export default function ManageLayout({ children }) {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function ManageLayout({ children }) {
     { label: 'Expense', href: '/manage/expense', icon: ArrowDownRight },
     { label: 'Credit', href: '/manage/credit', icon: ArrowUpRight },
     { label: 'History', href: '/manage/history', icon: History },
+    { label: 'Calculator', href: '/manage/calculator', icon: Calculator },
     { label: 'To-Dos', href: '/manage/todos', icon: CheckSquare },
   ];
 
