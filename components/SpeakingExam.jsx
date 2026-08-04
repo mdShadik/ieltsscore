@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Volume2, VolumeX, RefreshCw, Clock } from "lucide-react";
 import Header from "@/components/Header";
 import EvaluationModal from "@/components/EvaluationModal";
@@ -21,6 +21,8 @@ import {
   preloadWhisperModel,
   transcribeAudioBlob,
 } from "@/lib/client/whisperTranscriber";
+import Lottie from "lottie-react";
+import examinerIdle from "@/animations/speak.json";
 
 const SPEAKING_LOADING_STEPS = [
   "Analyzing fluency & coherence...",
@@ -85,6 +87,25 @@ export default function SpeakingExam({ providerId }) {
   const wantsListeningRef = useRef(false);
   const transcriptRef = useRef("");
   const interimRef = useRef("");
+
+  const recoloredExaminerAnimation = useMemo(() => {
+    if (!examinerIdle) return null;
+    const cloned = JSON.parse(JSON.stringify(examinerIdle));
+
+    // Only recolor the sound-wave layer (layer 5 stroke) to indigo.
+    // Layer 6 contains the face (eyes, mouth) — leave it untouched.
+    const waveLayer = cloned.layers[5];
+    if (waveLayer?.shapes?.[1]?.ty === "st" && waveLayer.shapes[1].c) {
+      waveLayer.shapes[1].c.k = [0.505, 0.549, 0.972]; // indigo-400
+    }
+    // Also recolor layer 4's dark blue fill if present
+    const headLayer = cloned.layers[4];
+    if (headLayer?.shapes?.[0]?.it?.[1]?.it?.[1]?.ty === "fl") {
+      headLayer.shapes[0].it[1].it[1].c.k = [0.118, 0.145, 0.275]; // dark navy
+    }
+
+    return cloned;
+  }, []);
 
   useEffect(() => {
     transcriptRef.current = transcript;
@@ -174,8 +195,12 @@ export default function SpeakingExam({ providerId }) {
     if (inputMode !== "voice" || voiceEngine !== "transformer") return;
 
     let cancelled = false;
-    setIsModelLoading(true);
-    setModelLoadProgress(0);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setIsModelLoading(true);
+        setModelLoadProgress(0);
+      }
+    });
 
     preloadWhisperModel((progress) => {
       if (!cancelled) setModelLoadProgress(progress);
@@ -846,20 +871,73 @@ export default function SpeakingExam({ providerId }) {
             >
               {/* Examiner panel */}
               <div className="flex flex-col min-h-0 md:min-h-[420px] gap-3">
-                <div className="flex-1 min-h-[180px] md:min-h-0 overflow-y-auto rounded-2xl bg-[#141414] border border-[#222] p-4 md:p-6">
-                  <div className="flex items-center gap-2 mb-3">
+                {/* Lottie avatar — large, prominent, above the question box */}
+                <div
+                  className={`shrink-0 flex flex-col items-center justify-center py-4 rounded-2xl border transition-all duration-500 ${
+                    isPlayingVoice
+                      ? "bg-indigo-950/40 border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.2)]"
+                      : "bg-[#141414] border-[#222]"
+                  }`}
+                >
+                  <div className="relative">
+                    {/* Outer glow ring when speaking */}
+                    {isPlayingVoice && (
+                      <span className="absolute inset-0 rounded-full bg-indigo-500/10 animate-ping" style={{ animationDuration: "1.5s" }} />
+                    )}
+                    <div className="w-36 h-36 md:w-44 md:h-44">
+                      {recoloredExaminerAnimation && (
+                        <Lottie
+                          key={isPlayingVoice ? "speaking" : "idle"}
+                          animationData={recoloredExaminerAnimation}
+                          loop={true}
+                          autoplay={isPlayingVoice}
+                          className="w-full h-full"
+                        />
+                      )}
+                    </div>
+                    {isPlayingVoice && (
+                      <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Status row under animation */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-xs font-bold tracking-wide text-gray-400">
+                      Ava · AI Examiner
+                    </span>
+                    {isPlayingVoice ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30 animate-pulse">
+                        Speaking
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#222] text-gray-500 border border-[#333]">
+                        Listening
+                      </span>
+                    )}
+                    {isPlayingVoice && (
+                      <button
+                        onClick={stopAudio}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-medium border border-red-500/20 transition-colors"
+                        title="Mute examiner"
+                      >
+                        <VolumeX className="w-3 h-3" /> Mute
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Question text box */}
+                <div className="flex-1 min-h-[100px] md:min-h-0 overflow-y-auto rounded-2xl bg-[#141414] border border-[#222] p-4 md:p-6 flex flex-col">
+                  <div className="flex items-center gap-2 mb-3 shrink-0">
                     <Volume2 className="w-4 h-4 text-indigo-400" />
                     <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
                       Examiner Says
                     </span>
-                    {isPlayingVoice && (
-                      <span className="ml-auto flex items-center gap-1.5 text-xs text-emerald-400">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                        Speaking
-                      </span>
-                    )}
                   </div>
-                  <p className="text-base md:text-lg leading-relaxed text-gray-100 whitespace-pre-line">
+                  <p className="text-base md:text-lg leading-relaxed text-gray-100 whitespace-pre-line flex-1">
                     {currentQuestion}
                   </p>
                 </div>
@@ -918,7 +996,7 @@ export default function SpeakingExam({ providerId }) {
                       else handlePart3Turn();
                     }}
                     isProcessing={isProcessing}
-                    canSubmit={Boolean(getAnswer())}
+                    canSubmit={Boolean(`${transcript} ${interimTranscript}`.trim())}
                     submitLabel={
                       testPhase === "PART2_SPEAK" ? "Finish Part 2" : "Submit Answer"
                     }
