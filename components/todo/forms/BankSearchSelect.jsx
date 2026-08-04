@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X, Building2 } from 'lucide-react';
 import { bankData } from '@/constant/manage/banks';
+import { getInitials } from '@/lib/utils';
 
 // Flatten all banks from all categories into a single list with group labels
 const GROUP_LABELS = {
@@ -158,7 +159,7 @@ export default function BankSearchSelect({ value, onChange, required = false }) 
                   }`}
                 >
                   <Building2 className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-400' : 'text-gray-600'}`} />
-                  {item.name}
+                  {item.name} ({getInitials(item.name)})
                 </li>
               );
             })}

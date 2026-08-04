@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Trash2, X, AlertTriangle } from 'lucide-react';
 import { deleteTransactionOnly, deleteTransactionAndRestore } from '@/lib/db';
+import { getFirstWord } from '@/lib/utils';
 
 // ── Confirmation Modal ───────────────────────────────────────────────────────
 function DeleteModal({ transaction, onConfirm, onCancel, loading }) {
@@ -201,9 +202,9 @@ export default function TransactionList({ transactions, onDeleted }) {
 
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{tx.description}</p>
-                  <div className="flex items-center space-x-2 mt-0.5 text-xs text-gray-400">
-                    <span className="text-gray-300 font-medium">{tx.bankName}</span>
-                    <span className="text-gray-600">•</span>
+                  <div className="flex gap-1 sm:gap-0 flex-col sm:flex-row sm:items-center space-x-2 mt-0.5 text-xs text-gray-400">
+                    <span className="text-gray-300 font-medium pl-3 sm:pl-0">{getFirstWord(tx.bankName)}</span>
+                    <span className="text-gray-600 hidden sm:flex">•</span>
                     <span className="bg-[#222] border border-[#333] px-2 py-0.5 rounded-full text-gray-400 font-medium text-[11px]">
                       {tx.bankType}
                     </span>
